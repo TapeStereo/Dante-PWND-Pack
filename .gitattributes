@@ -1,0 +1,9 @@
+* text=auto
+*.cs text eol=lf
+*.ps1 text eol=crlf
+*.md text eol=lf
+*.txt text eol=crlf
+*.json text eol=lf
+*.manifest text eol=lf
+payload/** -text -diff -merge
+*.png -text -diff -merge

@@ -1,0 +1,14 @@
+/build/
+/dist/
+/reports/
+/payload/
+/.vs/
+*.user
+*.suo
+*.log
+*.tmp
+*.new-*
+**/backup/
+**/Backups/
+.DS_Store
+._*
