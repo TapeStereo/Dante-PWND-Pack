@@ -2,7 +2,7 @@
 
 [Скачать 1.1](https://github.com/TapeStereo/Dante-PWND-Pack/releases/download/v1.1/Dante-PWND-Pack-v1.1.exe) · [Все релизы](https://github.com/TapeStereo/Dante-PWND-Pack/releases)
 
-Windows 10/11 x64, .NET Framework 4.8. Размер EXE — 556 МБ.
+Windows 10/11 x64, .NET Framework 4.8.
 
 Нажмите **«СДЕЛАТЬ КРАСИВО»**: программа установит DVS 4.4.1.3 и Dante Controller 4.15.0.10, сохранит оригиналы в backup и заменит файлы лицензии DVS. Оба установщика и файлы замены встроены.
 
