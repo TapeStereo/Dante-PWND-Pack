@@ -2,6 +2,7 @@
 /dist/
 /reports/
 /payload/
+/installers/
 /.vs/
 *.user
 *.suo

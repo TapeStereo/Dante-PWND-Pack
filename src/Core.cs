@@ -353,7 +353,7 @@ namespace DvsRepair
             {
                 try
                 {
-                    Log("DVS Repair v1.0; installed=" + install.DirectoryPath + "; service=" + install.ServiceName);
+                    Log("Dante PWND Pack v1.1; installed=" + install.DirectoryPath + "; service=" + install.ServiceName);
                     progress.Report(new RepairProgress(5, "Проверяем встроенные файлы", "Подготовка и проверка SHA-256."));
                     Payload.Extract(stage);
                     transaction = new FileTransaction(stage, install.DirectoryPath, licensing, backups, Log);

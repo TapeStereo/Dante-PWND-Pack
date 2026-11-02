@@ -1,4 +1,8 @@
-DVS Repair 1.0 — переносимая утилита Windows.
+Dante PWND Pack 1.1
 
-Для запуска скачайте **DVS-Repair-v1.0.exe**. Требуются Windows 10/11, .NET Framework 4.8 и установленная Dante Virtual Soundcard.
-Файлы сервиса и Licensing встроены в EXE
+- DVS 4.4.1.3 и Dante Controller 4.15.0.10 внутри EXE.
+- «СДЕЛАТЬ КРАСИВО»: установка, backup и замена файлов DVS.
+- Отдельный режим замены без переустановки.
+- Новое название, обновлённый интерфейс и кнопка Bahnschrift.
+
+Windows 10/11 x64, .NET Framework 4.8. После выполнения требуется перезагрузка.

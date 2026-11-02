@@ -1,8 +1,9 @@
 param([string]$OutputDirectory = (Join-Path $PSScriptRoot 'dist'))
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-$packageName = 'DVS-Repair-v1.0'
+$packageName = 'Dante-PWND-Pack-v1.1'
 $exePath = Join-Path $OutputDirectory ($packageName + '.exe')
 if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) { throw 'Build the EXE first.' }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'README.txt') -Destination (Join-Path $OutputDirectory ($packageName + '-README.txt')) -Force
@@ -10,7 +11,7 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'reports\desktop.png') -Destinat
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'reports\self-test.txt') -Destination (Join-Path $OutputDirectory ($packageName + '-tests.txt')) -Force
 $sourceZip = Join-Path $OutputDirectory ($packageName + '-source.zip')
 if (Test-Path -LiteralPath $sourceZip) { Remove-Item -LiteralPath $sourceZip -Force }
-$sourceFiles = @('README.md','README.txt','PRODUCT.md','DESIGN.md','build.ps1','package.ps1','app.manifest','.gitignore','.gitattributes','release-notes.md','.impeccable\design.json','assets\logo.png','assets\logo.png.json','docs\screenshot.png')
+$sourceFiles = @('README.md','README.txt','build.ps1','package.ps1','app.manifest','.gitignore','.gitattributes','release-notes.md','assets\logo.png','docs\screenshot.png')
 $sourceFiles += @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src') -Filter '*.cs' -File | ForEach-Object { 'src\' + $_.Name })
 $zip = [System.IO.Compression.ZipFile]::Open($sourceZip, [System.IO.Compression.ZipArchiveMode]::Create)
 try {

@@ -175,6 +175,7 @@ namespace DvsRepair
                     ExpectFailure(() => transaction.BackupAll());
                     CheckOriginals(install, licensing, originals);
                 }));
+                SetupTests.RunAll(root, Test);
                 try { Installation install = Installation.Locate(); results.Add("INFO Read-only discovery: " + install.DirectoryPath + "; service=" + install.ServiceName); }
                 catch (Exception ex) { results.Add("INFO DVS discovery: " + ex.Message); }
             }

@@ -1,5 +1,6 @@
 param(
     [string]$PayloadRoot = (Join-Path $PSScriptRoot 'payload'),
+    [string]$InstallerRoot = (Join-Path $PSScriptRoot 'installers'),
     [string]$OutputDirectory = (Join-Path $PSScriptRoot 'dist')
 )
 $ErrorActionPreference = 'Stop'
@@ -12,6 +13,7 @@ if (-not $checkedStage.StartsWith($allowedPrefix, [System.StringComparison]::Ord
 if (Test-Path -LiteralPath $checkedStage) { Remove-Item -LiteralPath $checkedStage -Recurse -Force }
 New-Item -ItemType Directory -Path $buildRoot, $stageRoot, $OutputDirectory -Force | Out-Null
 Add-Type -AssemblyName System.IO.Compression.FileSystem
+Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.Drawing
 $sourceService = Join-Path $PayloadRoot 'dvs_service.exe'
 $sourceLicensing = Join-Path $PayloadRoot 'Licensing'
@@ -37,18 +39,44 @@ foreach ($payloadFile in $allFiles) {
 }
 $buildInfo = @'
 using System.Reflection;
-[assembly: AssemblyTitle("DVS Repair")]
-[assembly: AssemblyDescription("Portable DVS file replacement utility")]
-[assembly: AssemblyProduct("DVS Repair")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyTitle("Dante PWND Pack")]
+[assembly: AssemblyDescription("Offline Dante installation and DVS file replacement utility")]
+[assembly: AssemblyProduct("Dante PWND Pack")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 namespace DvsRepair { internal static class BuildInfo { internal static readonly PayloadFile[] Files = {
 '@
 $buildInfo += "`r`n" + ($records -join ",`r`n") + "`r`n}; } }`r`n"
 [System.IO.File]::WriteAllText((Join-Path $buildRoot 'BuildInfo.cs'), $buildInfo, [System.Text.UTF8Encoding]::new($false))
+$installerDefinitions = @(
+    @{ Key='Dvs'; Name='Dante Virtual Soundcard'; File='DVS-4.4.1.3_windows.exe'; Version='4.4.1.3' },
+    @{ Key='Controller'; Name='Dante Controller'; File='DanteController-4.15.0.10_windows.exe'; Version='4.15.0.10' }
+)
+$installerResources = @()
+$installerInfo = 'namespace DvsRepair { internal static class InstallerBuildInfo {' + "`r`n"
+foreach ($installer in $installerDefinitions) {
+    $installerPath = Join-Path $InstallerRoot $installer.File
+    $installerFile = Get-Item -LiteralPath $installerPath -ErrorAction Stop
+    if ($installerFile.VersionInfo.ProductVersion -ne $installer.Version) { throw ('Unexpected installer version: ' + $installer.Name) }
+    $signature = Get-AuthenticodeSignature -LiteralPath $installerPath
+    if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'CN=AUDINATE PTY LTD') { throw ('Invalid Audinate installer signature: ' + $installer.Name) }
+    $installerHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $resource = 'DvsRepair.Installers.' + $installer.Key + '.exe'
+    $installerInfo += 'internal static readonly InstallerSpec ' + $installer.Key + ' = new InstallerSpec("' + $installer.Name + '", "' + $installer.File + '", "' + $installer.Version + '", "' + $installerHash + '", ' + $installerFile.Length + 'L, "' + $resource + '");' + "`r`n"
+    $installerResources += '/resource:' + $installerFile.FullName + ',' + $resource
+}
+$installerInfo += "} }`r`n"
+[System.IO.File]::WriteAllText((Join-Path $buildRoot 'InstallerBuildInfo.cs'), $installerInfo, [System.Text.UTF8Encoding]::new($false))
 $zipPath = Join-Path $buildRoot 'payload.zip'
 if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
-[System.IO.Compression.ZipFile]::CreateFromDirectory($stageRoot, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+$payloadArchive = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+    # .NET Framework on Windows may otherwise put backslashes in ZIP entry names.
+    foreach ($payloadFile in $allFiles) {
+        $entryName = $payloadFile.FullName.Substring($stageRoot.Length).TrimStart('\').Replace('\','/')
+        [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($payloadArchive, $payloadFile.FullName, $entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+    }
+} finally { $payloadArchive.Dispose() }
 $logoPath = Join-Path $taskRoot 'assets\logo.png'
 if (-not (Test-Path -LiteralPath $logoPath -PathType Leaf)) { throw 'Missing assets/logo.png' }
 $originalLogo = [System.Drawing.Image]::FromFile($logoPath)
@@ -93,10 +121,12 @@ try {
 } finally { $iconWriter.Dispose(); $iconStream.Dispose() }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path -LiteralPath $compiler)) { $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe' }
-$outputExe = Join-Path $OutputDirectory 'DVS-Repair-v1.0.exe'
+$outputExe = Join-Path $OutputDirectory 'Dante-PWND-Pack-v1.1.exe'
 $compilerArgs = @('/nologo','/target:winexe','/platform:anycpu','/optimize+','/codepage:65001','/utf8output',('/out:' + $outputExe),('/win32manifest:' + (Join-Path $taskRoot 'app.manifest')),('/win32icon:' + (Join-Path $buildRoot 'app.ico')),('/resource:' + $zipPath + ',DvsRepair.Payload.zip'),'/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll','/reference:System.Windows.Forms.dll','/reference:System.ServiceProcess.dll','/reference:System.IO.Compression.dll','/reference:System.IO.Compression.FileSystem.dll',(Join-Path $buildRoot 'BuildInfo.cs'))
 $compilerArgs += @(Get-ChildItem -LiteralPath (Join-Path $taskRoot 'src') -Filter '*.cs' | Sort-Object Name | Select-Object -ExpandProperty FullName)
 $compilerArgs += '/resource:' + $logoPath + ',DvsRepair.Logo.png'
+$compilerArgs += (Join-Path $buildRoot 'InstallerBuildInfo.cs')
+$compilerArgs += $installerResources
 & $compiler $compilerArgs
 if ($LASTEXITCODE -ne 0) { throw ('C# compiler failed: ' + $LASTEXITCODE) }
 Get-Item -LiteralPath $outputExe | Select-Object FullName,Length
